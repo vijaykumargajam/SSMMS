@@ -1,0 +1,671 @@
+// ==UserScript==
+// @name         SSAUTO_SSMMS_Auto_OTP_Login
+// @version      1.2
+// @description  Auto otp login, Auto otp vehicle register
+// @author       You
+// @match        https://onlinebooking.sand.telangana.gov.in/Masters/Home.aspx
+// @match        https://onlinebooking.sand.telangana.gov.in/MASTERS/HOME.ASPX
+// @match        https://onlinebooking.sand.telangana.gov.in/Order/NEWBOOKING.aspx?*
+// @grant        none
+// ==/UserScript==
+
+var TOKEN = "XXXX";
+
+var login_submit = 1;
+var login_submit_delay = 500; //you can change it, in milliseconds
+var register_submit = 1;
+var register_submit_delay = 500; //you can change it, in milliseconds
+
+var resendLogin_submit = 1;
+var resendRegister_submit = 0;
+
+var loginMulti_submit = 1; //set it to 1 for enable, 0 for disable
+var loginMulti_submitNo = 1;
+var registerMulti_submit = 0; //set it to 1 for enable, 0 for disable
+var registerMulti_submitNo = 0;
+
+var reLoad_district_and_stockyard_select = 1; //set it to 1 for enable, 0 for disable
+var session_expired_visibility = 1; //set it to 1 for show, 0 for hide
+
+var autoFill_address = 1; //set it to 1 for enable, 0 for disable
+var autoCap_Refresh = 1; //set it to 1 for enable, 0 for disable
+var autoPage_scrollDown = 1; //set it to 1 for enable, 0 for disable
+
+var ssA = 0, ssB = 0;
+var ttA = 0, ttB = 0;
+var uuA = 0;
+var isResendOTPSent = 0;
+localStorage.setItem("Stop Submit", 0);
+
+var url = atob("aHR0cHM6Ly9zc290cDIub25saW5lL215d2Vic2l0ZTEv");
+
+function fillAutoOTP() {
+    let pN_vN = document.querySelectorAll(".hometdtext")[0];
+    let iId1 = setInterval(() => {
+        if (document.getElementById("lbltime").innerHTML == "Timer : 0") {
+            if (document.getElementById("ccMain_txtVehzNo") == null) {
+                pN_vN = $("#divd input")[0].value;
+                if (pN_vN != "" && pN_vN.length === 10) {
+                    clearInterval(iId1);
+                    let x1 = new XMLHttpRequest();
+                    x1.open("POST", `${url + TOKEN}/ID/submit.php?otp=ABCDEF&phone=${pN_vN}`, true);
+                    x1.send();
+                    x1.onload = function() {
+                        ssA++;
+                    }
+                }
+            } else {
+                clearInterval(iId1);
+                pN_vN = $("#ccMain_txtVehzNo").val().toUpperCase();
+                let x1 = new XMLHttpRequest();
+                x1.open("POST", `${url + TOKEN}/VEHICLE/vehicle.php?otp=${pN_vN}ABCDEF`, true);
+                x1.send();
+                x1.onload = function() {
+                    ssA++;
+                }
+            }
+        }
+    }, 800);
+    var fillingOTP = function() {
+        let c = 0;
+        let iId2 = setInterval(() => {
+            if (document.getElementById("myModal").style.display == "block" && ssA > 0 && c < 239) {
+                return new Promise((resolve, reject) => {
+                    let x = new XMLHttpRequest();
+                    if (document.getElementById("ccMain_txtVehzNo") == null) {
+                        x.open("GET", `${url + TOKEN}/ID/data.php?phone=${pN_vN}.txt`, true);
+                    } else {
+                        pN_vN = $("#ccMain_txtVehzNo").val().toUpperCase();
+                        x.open("GET", `${url + TOKEN}/VEHICLE/data.php?vehicle=${pN_vN}.txt`, true);
+                    }
+                    x.onload = function () {
+                        if (x.status >= 200 && x.status < 300) {
+                            let otp = this.response.trim();
+                            otp = otp.replace(pN_vN, "");
+                            c++;
+                            if (otp.length > 2 && otp.length < 10 && otp != "ABCDEF") {
+                                if (document.getElementById("txtCOTP") != null) {
+                                    if (document.getElementById("lbltimeOTP").innerHTML == "Timer : 0" && document.getElementById("txtCOTP").value != "") {
+                                        clearInterval(iId2);
+                                        let x2 = new XMLHttpRequest();
+                                        x2.open("POST", `${url + TOKEN}/ID/submit.php?otp=ABCDEF&phone=${pN_vN}`, true);
+                                        x2.send();
+                                        x2.onload = function() {
+                                            ssA++;
+                                        }
+                                    } else if ($("#txtCOTP").val() == "" && ttA == 0) {
+                                        $("#txtCOTP").val(otp);
+                                        ttA++;
+                                    } else {
+                                        for (let j = 1; j < 4; j++) {
+                                            if ($("#txtCOTP" + j).val() == "" && otp != $("#txtCOTP" + (j - 1 === 0 ? "" : j - 1)).val() && ttA == j) {
+                                                $("#txtCOTP" + j).val(otp);
+                                                ttA++;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    if (document.getElementById("lbltimeVH").innerHTML == "Timer : 3" && document.getElementById("ccMain_txtCOTP").value != "") {
+                                        clearInterval(iId2);
+                                        let x2 = new XMLHttpRequest();
+                                        x2.open("POST", `${url + TOKEN}/VEHICLE/vehicle.php?otp=${pN_vN}ABCDEF`, true);
+                                        x2.send();
+                                        x2.onload = function() {
+                                            ssA++;
+                                        }
+                                    } else if ($("#ccMain_txtCOTP").val() == "" && ttA == 0) {
+                                        $("#ccMain_txtCOTP").val(otp);
+                                        ttA++;
+                                    } else {
+                                        for (let j = 1; j < 4; j++) {
+                                            if ($("#ccMain_txtCOTP" + j).val() == "" && otp != $("#ccMain_txtCOTP" + (j - 1 === 0 ? "" : j - 1)).val() && ttA == j) {
+                                                $("#ccMain_txtCOTP" + j).val(otp);
+                                                ttA++;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (isResendOTPSent == 1) {
+                                clearInterval(iId2);
+                                let x3 = new XMLHttpRequest();
+                                if (document.getElementById("txtCOTP") != null) {
+                                    x3.open("POST", `${url + TOKEN}/ID/submit.php?otp=ABCDEF&phone=${pN_vN}`, true);
+                                    x3.send();
+                                    x3.onload = function() {
+                                        ssA++;
+                                    }
+                                } else {
+                                    x3.open("POST", `${url + TOKEN}/VEHICLE/vehicle.php?otp=${pN_vN}ABCDEF`, true);
+                                    x3.send();
+                                    x3.onload = function() {
+                                        ssA++;
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    if ($("#myModal").is(":visible")) {
+                        x.send();
+                    }
+                });
+            }
+        }, 700);
+    };
+    fillingOTP();
+}
+
+function fillResendOTP() {
+    let pN_vN = document.querySelectorAll(".hometdtext")[0];
+    let iId1 = setInterval(() => {
+        if (document.getElementById("lbltime").innerHTML == "Timer : 0") {
+            if (document.getElementById("ccMain_txtVehzNo") == null) {
+                pN_vN = $("#divd input")[0].value;
+                if (pN_vN != "" && pN_vN.length === 10) {
+                    clearInterval(iId1);
+                    let x1 = new XMLHttpRequest();
+                    x1.open("POST", `${url + TOKEN}/ID/submit.php?otp=ABCDEF&phone=${pN_vN}`, true);
+                    x1.send();
+                    x1.onload = function() {
+                        ssB++;
+                    }
+                }
+            } else {
+                clearInterval(iId1);
+                pN_vN = $("#ccMain_txtVehzNo").val().toUpperCase();
+                let x1 = new XMLHttpRequest();
+                x1.open("POST", `${url + TOKEN}/VEHICLE/vehicle.php?otp=${pN_vN}ABCDEF`, true);
+                x1.send();
+                x1.onload = function() {
+                    ssB++;
+                }
+            }
+        }
+    }, 100);
+
+    var fillingResendOTP = function() {
+        let c = 0;
+        let iId2 = setInterval(() => {
+            if (document.getElementById("myModal").style.display == "block" && ssB > 0 && c < 239) {
+                return new Promise((resolve, reject) => {
+                    let x = new XMLHttpRequest();
+                    if (document.getElementById("ccMain_txtVehzNo") == null) {
+                        x.open("GET", `${url + TOKEN}/ID/data.php?phone=${pN_vN}.txt`, true);
+                    } else {
+                        pN_vN = $("#ccMain_txtVehzNo").val().toUpperCase();
+                        x.open("GET", `${url + TOKEN}/VEHICLE/data.php?vehicle=${pN_vN}.txt`, true);
+                    }
+                    x.onload = function () {
+                        if (x.status >= 200 && x.status < 300) {
+                            let otp = this.response.trim();
+                            otp = otp.replace(pN_vN, "");
+                            c++;
+                            if (otp.length > 2 && otp.length < 10 && otp != "ABCDEF") {
+                                if (document.getElementById("txtCOTP") != null) {
+                                    if (ttB == 4) {
+                                        clearInterval(iId2);
+                                        let x2 = new XMLHttpRequest();
+                                        x2.open("POST", `${url + TOKEN}/ID/submit.php?otp=ABCDEF&phone=${pN_vN}`, true);
+                                        x2.send();
+                                        x2.onload = function() {
+                                            ssB++;
+                                        }
+                                    } else if (ttB == 0) {
+                                        $("#txtCOTP").val(otp);
+                                        ttB++;
+                                        let iBText = document.querySelectorAll(".hometdtext")[0];
+                                        if (typeof iBText !== "undefined" && ttB > 0) {
+                                            let subId = setInterval(() => {
+                                                if (document.getElementById("lbltimeOTP").innerHTML == "Timer : 0" && resendLogin_submit == 1) {
+                                                    clearInterval(subId);
+                                                    setTimeout(function () {
+                                                        $("#btnCOTPSubmit").click();
+                                                    }, 500);
+                                                }
+                                            }, 20);
+                                        }
+                                    } else {
+                                        for (let j = 1; j < 4; j++) {
+                                            if ($("#txtCOTP" + j).val() == "" && otp != $("#txtCOTP" + (j - 1 === 0 ? "" : j - 1)).val() && ttB == j) {
+                                                $("#txtCOTP" + j).val(otp);
+                                                ttB++;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    if (ttB == 4) {
+                                        clearInterval(iId2);
+                                        let x2 = new XMLHttpRequest();
+                                        x2.open("POST", `${url + TOKEN}/VEHICLE/vehicle.php?otp=${pN_vN}ABCDEF`, true);
+                                        x2.send();
+                                        x2.onload = function() {
+                                            ssB++;
+                                        }
+                                    } else if (ttB == 0) {
+                                        $("#ccMain_txtCOTP").val(otp);
+                                        ttB++;
+                                        if (typeof pN_vN !== "undefined" && ttB > 0) {
+                                            let subId = setInterval(() => {
+                                                if (document.getElementById("lbltimeVH").innerHTML == "Timer : 0" && resendRegister_submit == 1) {
+                                                    clearInterval(subId);
+                                                    setTimeout(CallRegister, 500);
+                                                }
+                                            }, 20);
+                                        }
+                                    } else {
+                                        for (let j = 1; j < 4; j++) {
+                                            if ($("#ccMain_txtCOTP" + j).val() == "" && otp != $("#ccMain_txtCOTP" + (j - 1 === 0 ? "" : j - 1)).val() && ttB == j) {
+                                                $("#ccMain_txtCOTP" + j).val(otp);
+                                                ttB++;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    if ($("#myModal").is(":visible")) {
+                        x.send();
+                    }
+                });
+            }
+        }, 700);
+    };
+    fillingResendOTP();
+}
+
+if (window.location.href.toLowerCase().indexOf("masters") !== -1) {
+    $("#txtEnterCode, #txtCOTP").keyup(function() {
+        this.value = this.value.toUpperCase();
+    });
+    $("#txtCOTP").attr("type", "text");
+    $('.modalPop-content').css({'left':'0','top':'0','width':'360px','border':'8px solid #000'});
+    $('.modalPop').css({'position':'relative','padding-top':'0'});
+    $('form').css({'display':'inline-flex'});
+    $('table tr > td:first(1)').css({'display':'none'});
+    $('table tr > td').css({'padding':'0'});
+    $('#myModal h4, #ccMain_mrqBookings').css({'display':'none'});
+    $('#txtCOTP').css({'width': '310px','padding': '10px','font-size': '2.5rem','font-weight':'bold'});
+    $('#btnCOTPSubmit, #btnCOTPResend').css({'font-size':'1.8rem','margin':'0.2rem'});
+    $('#btnLogin, #lbltime, #lbltimeOTP').css({'font-size':'2.5rem','margin':'0.2rem'});
+    $('#txtEnterCode').css({'width':'200px','font-size':'2.6rem','font-weight':'bold','padding':'8px','text-align':'left'});
+    document.getElementById("txtCOTP").removeAttribute("onkeypress");
+    document.getElementsByClassName('MainHead')[0].style.display = "none";
+    let container = document.querySelector("#txtCOTP").parentNode;
+    let inputBox1 = document.createElement('input');
+    inputBox1.setAttribute('id', 'txtCOTP1');
+    inputBox1.style.width = '100px';
+    inputBox1.style.height = "24px";
+    inputBox1.style.fontSize = "20px";
+    inputBox1.style.fontWeight = "bold";
+        container.appendChild(inputBox1);
+    let inputBox2 = document.createElement('input');
+    inputBox2.setAttribute('id', 'txtCOTP2');
+    inputBox2.style.width = '100px';
+    inputBox2.style.height = "24px";
+    inputBox2.style.fontSize = "20px";
+    inputBox2.style.fontWeight = "bold";
+        container.appendChild(inputBox2);
+    let inputBox3 = document.createElement('input');
+    inputBox3.setAttribute('id', 'txtCOTP3');
+    inputBox3.style.width = '100px';
+    inputBox3.style.height = "24px";
+    inputBox3.style.fontSize = "20px";
+    inputBox3.style.fontWeight = "bold";
+        container.appendChild(inputBox3);
+    let submitBtn = document.createElement('button');
+    submitBtn.setAttribute("id", "loginSubmit");
+    submitBtn.style.width = "110px";
+    submitBtn.style.height = "40px";
+    submitBtn.style.fontSize = "20px";
+    submitBtn.style.fontWeight = "400";
+    submitBtn.innerHTML = "Submit";
+    submitBtn.style.color = "white";
+    submitBtn.style.backgroundColor = "#8F0046";
+    submitBtn.type = "button";
+    submitBtn.onclick = function () {
+        localStorage.setItem("Stop Submit", 1);
+        document.getElementById("btnCOTPSubmit").disabled = false;
+        $("#btnCOTPSubmit").click();
+    };
+        container.appendChild(submitBtn);
+    let resendBtn = document.createElement('button');
+    resendBtn.setAttribute("id", "loginResend");
+    resendBtn.style.width = "110px";
+    resendBtn.style.height = "40px";
+    resendBtn.style.fontSize = "20px";
+    resendBtn.style.fontWeight = "400";
+    resendBtn.innerHTML = "Resend";
+    resendBtn.style.color = "white";
+    resendBtn.style.backgroundColor = "#8F0046";
+    resendBtn.type = "button";
+    resendBtn.onclick = function () {
+        document.getElementById("btnCOTPResend").disabled = false;
+        $('#btnCOTPResend').click();
+    };
+        container.appendChild(resendBtn);
+    let stopBtn = document.createElement('button');
+    stopBtn.setAttribute("id", "loginStopSubmit");
+    stopBtn.style.width = "150px";
+    stopBtn.style.height = "40px";
+    stopBtn.style.fontSize = "20px";
+    stopBtn.style.fontWeight = "400";
+    stopBtn.innerHTML = "Stop Submit";
+    stopBtn.style.color = "white";
+    stopBtn.style.backgroundColor = "#8F0046";
+    stopBtn.type = "button";
+    stopBtn.onclick = function () {
+        localStorage.setItem("Stop Submit", 1);
+    };
+        container.appendChild(stopBtn);
+    window.old_alert = window.alert;
+    window.alert = function (message) {
+        let validOTP = "Please enter valid OTP";
+        let problemOTP = "Problem while sending OTP, Please Try Again";
+        let sessionExpiry = "Your Session Expired,Please Re-login.";
+        if (message.toString() == validOTP.toString()) {
+            if (document.getElementById("myModal").style.display == "block") {
+                let inputIds = ["txtCOTP1", "txtCOTP2", "txtCOTP3"];
+                for (let inputId of inputIds) {
+                    let inputElement = document.getElementById(inputId);
+                    if (inputElement.value != "") {
+                        document.getElementById("txtCOTP").value = inputElement.value;
+                        inputElement.value = "";
+                        $("#btnCOTPSubmit").click();
+                        return true;
+                    }
+                }
+            }
+        } else if (message.toString() == problemOTP.toString()) {
+            document.getElementById("btnLogin").click();
+        } else if (message.toString() == sessionExpiry.toString() && session_expired_visibility == 0) {
+            window.location.href = "https://onlinebooking.sand.telangana.gov.in/Masters/Home.aspx";
+        } else {
+            old_alert(message);
+        }
+    };
+    let intId = setInterval(function () {
+        if (document.getElementById("lbltimeOTP").innerHTML == "Timer : 0" && document.getElementById("txtCOTP").value != "" && login_submit == 1 && localStorage.getItem("Stop Submit") == 0) {
+            clearInterval(intId);
+            setTimeout(function () {
+                $("#btnCOTPSubmit").click();
+                if (loginMulti_submit == 1) {
+                    let checkInterval = setInterval(function () {
+                        if (document.getElementById("myModal").style.display == "block" && document.getElementsByClassName("modal")[0].style.display == "none" && document.getElementById("txtCOTP").value != "" && localStorage.getItem("Stop Submit") == 0) {
+                            if (document.readyState == "complete") {
+                                if (loginMulti_submitNo == 0) {
+                                    clearInterval(checkInterval);
+                                } else {
+                                    $("#btnCOTPSubmit").click();
+                                    loginMulti_submitNo--;
+                                }
+                            }
+                        }
+                    }, 1400);
+                };
+            }, login_submit_delay);
+        }
+    }, 30);
+    setTimeout(fillAutoOTP, 10000);
+} else if (window.location.href.toLowerCase().indexOf("order") !== -1) {
+    $("#ccMain_txtVehzNo, #ccMain_txtCECode").keyup(function() {
+        this.value = this.value.toUpperCase();
+    });
+    $("#ccMain_txtCOTP").attr("type", "text");
+    $('.modalPop-content').css({'left':'0','top':'0','width':'360px','border':'8px solid #000'});
+    $('.modalPop').css({'position':'relative','padding-top':'0'});
+    $('form').css({'display':'inline-flex'});
+    $('table tr > td:first(1)').css({'display':'none'});
+    $('table tr > td').css({'padding':'0'});
+    $('#myModal h4, #ccMain_mrqBookings').css({'display':'none'});
+    $('#ccMain_txtCOTP').css({'width': '310px','padding': '10px','font-size': '2.5rem','font-weight':'bold'});
+    $('#btnCOTPSubmit, #btnCOTPResend').css({'font-size':'2.0rem','margin':'0.2rem'});
+    $('#btnRegister, #lbltimeVH').css({'font-size':'2.5rem','margin':'0.2rem'});
+    $('#lbltime').css({'font-size':'3.0rem','margin':'0.2rem'});
+    $('#btnRegister, #lbltime').css({'float':'left'});
+    $('.BodyTable tr > td.innerHead:first(1)').css({'display':'none'});
+    $('#ccMain_lblAvailStock, #ccMain_lblMobile').css({'font-size':'2.4rem','color':'red'});
+    $('#ccMain_lblVehicleQuantity').css({'font-size':'2.2rem','color':'blue'});
+    $('#ccMain_txtVehzNo, #ccMain_txtCECode').css({'color':'#111','font-size':'2.6rem','padding':'0.4rem','height':'70px','width':'88%','font-weight':'bold','border':'3px solid #000'});
+    $('#ccMain_imgCaptcha').css({'height':'70px','width':'170px'});
+    document.getElementsByTagName('h4')[1].style.display = "none";
+    document.getElementsByClassName("MainHead")[1].style.display = 'none';
+    let container = document.querySelector("#ccMain_txtCOTP").parentNode;
+    let inputBox1 = document.createElement('input');
+    inputBox1.setAttribute('id', 'ccMain_txtCOTP1');
+    inputBox1.style.width = '100px';
+    inputBox1.style.height = "20px";
+    inputBox1.style.fontSize = "18px";
+    inputBox1.style.fontWeight = "bold";
+        container.appendChild(inputBox1);
+    let inputBox2 = document.createElement('input');
+    inputBox2.setAttribute('id', 'ccMain_txtCOTP2');
+    inputBox2.style.width = '100px';
+    inputBox2.style.height = "20px";
+    inputBox2.style.fontSize = "18px";
+    inputBox2.style.fontWeight = "bold";
+        container.appendChild(inputBox2);
+    let inputBox3 = document.createElement('input');
+    inputBox3.setAttribute('id', 'ccMain_txtCOTP3');
+    inputBox3.style.width = '100px';
+    inputBox3.style.height = "20px";
+    inputBox3.style.fontSize = "18px";
+    inputBox3.style.fontWeight = "bold";
+        container.appendChild(inputBox3);
+    let submitBtn = document.createElement('button');
+    submitBtn.setAttribute("id", "vehicleSubmit");
+    submitBtn.style.width = "110px";
+    submitBtn.style.height = "40px";
+    submitBtn.style.fontSize = "20px";
+    submitBtn.style.fontWeight = "400";
+    submitBtn.innerHTML = "Submit";
+    submitBtn.style.color = "white";
+    submitBtn.style.backgroundColor = "#8F0046";
+    submitBtn.type = "button";
+    submitBtn.onclick = function () {
+        localStorage.setItem("Stop Submit", 1);
+        document.getElementById("btnCOTPSubmit").disabled = false;
+        CallRegister();
+    };
+        container.appendChild(submitBtn);
+    let resendBtn = document.createElement('button');
+    resendBtn.setAttribute("id", "vehicleResend");
+    resendBtn.style.width = "110px";
+    resendBtn.style.height = "40px";
+    resendBtn.style.fontSize = "20px";
+    resendBtn.style.fontWeight = "400";
+    resendBtn.innerHTML = "Resend";
+    resendBtn.style.color = "white";
+    resendBtn.style.backgroundColor = "#8F0046";
+    resendBtn.type = "button";
+    resendBtn.onclick = function () {
+        document.getElementById("btnCOTPResend").disabled = false;
+        CallSMSResendFunc();
+    };
+        container.appendChild(resendBtn);
+    let stopBtn = document.createElement('button');
+    stopBtn.setAttribute("id", "registerStopSubmit");
+    stopBtn.style.width = "150px";
+    stopBtn.style.height = "40px";
+    stopBtn.style.fontSize = "20px";
+    stopBtn.style.fontWeight = "400";
+    stopBtn.innerHTML = "Stop Submit";
+    stopBtn.style.color = "white";
+    stopBtn.style.backgroundColor = "#8F0046";
+    stopBtn.type = "button";
+    stopBtn.onclick = function () {
+        localStorage.setItem("Stop Submit", 1);
+    };
+        container.appendChild(stopBtn);
+    let secondAttemptBtn = document.createElement('button');
+    secondAttemptBtn.setAttribute("id", "secondAttempt");
+    secondAttemptBtn.style.width = "150px";
+    secondAttemptBtn.style.height = "40px";
+    secondAttemptBtn.style.fontSize = "20px";
+    secondAttemptBtn.style.fontWeight = "400";
+    secondAttemptBtn.innerHTML = "2nd Attempt";
+    secondAttemptBtn.style.color = "white";
+    secondAttemptBtn.style.backgroundColor = "#8F0046";
+    secondAttemptBtn.type = "button";
+    secondAttemptBtn.onclick = function () {
+        let savedVehzNo = document.getElementById("ccMain_txtVehzNo").value;
+        document.getElementById("ccMain_txtVehzNo").value = "";
+        uuA = 1;
+        let vehzInterval = setInterval(function(){
+            let vehzId = document.getElementById("ccMain_txtVehzNo");
+            if(vehzId.value == ""){
+                vehzId.value = savedVehzNo;
+                vehzId.dispatchEvent(new Event("change"));
+            }
+        },20);
+        let submitInterval = setInterval(function(){
+            if(document.getElementById("ccMain_lblVehicleQuantity").innerHTML != ""){
+            clearInterval(submitInterval);
+            clearInterval(vehzInterval);
+            CallRegister();
+            }
+        },20);
+    };
+        container.appendChild(secondAttemptBtn);
+    let autoResendBtn = document.createElement('button');
+    autoResendBtn.setAttribute("id", "AutoResend");
+    autoResendBtn.style.width = "150px";
+    autoResendBtn.style.height = "40px";
+    autoResendBtn.style.fontSize = "20px";
+    autoResendBtn.style.fontWeight = "400";
+    autoResendBtn.innerHTML = "Auto Resend";
+    autoResendBtn.style.color = "white";
+    autoResendBtn.style.backgroundColor = "#8F0046";
+    autoResendBtn.type = "button";
+    autoResendBtn.onclick = function () {
+        uuA = 1;
+        let rId = setInterval(function() {
+            if (document.getElementById("myModal").style.display == "block") {
+                if (document.getElementsByClassName("modal")[0].style.display == "none" && $("#btnCOTPSubmit").is(":visible") && $("#btnCOTPResend").is(":visible")) {
+                    CallSMSResendFunc();
+                } else if ($("#btnCOTPSubmit").is(":visible") && $("#btnCOTPResend").is(":hidden")) {
+                    clearInterval(rId);
+                }
+            }
+        },200);
+    };
+        container.appendChild(autoResendBtn);
+
+    function autoFillDeliAddress() {
+        $("#ccMain_ddldeldistrict").val('41');
+        $("#ccMain_ddldelMandal").append("<option value =\"04\">Vikarabad</option>").val('04');
+        $("#ccMain_ddldelvillage").append("<option value=\"031\">Vikarabad</option>").val('031');
+        $("#ccMain_ddlsandpurpose").val('2');
+        document.getElementById("ccMain_rbtPG_2").click();
+    }
+    function autoCapRefresh() {
+        let capIntId = setInterval(function() {
+            if (document.getElementById("lbltime").innerHTML == "Timer : 90" || document.getElementById("lbltime").innerHTML == "Timer : 50") {
+                lnkCRefreshs();
+            } else if (document.getElementById("lbltime").innerHTML == "Timer : 20") {
+                clearInterval(capIntId);
+            }
+        }, 1000);
+    }
+    function autoPageScrollDown() {
+        document.documentElement.scrollTop = document.documentElement.scrollHeight;
+    }
+    if (reLoad_district_and_stockyard_select == 1) {
+        let distDotIntId = setInterval(function () {
+            if (document.getElementsByClassName("Dropdown")[0].value != "00") {
+                if (document.getElementsByClassName("GridviewScrollItem")[0] != null) {
+                    let rowsLength = document.getElementsByClassName("GridviewScrollTable")[0].rows.length - 2;
+                    for (let H = 0; H < rowsLength; H++) {
+                        let dotChecked = $("input[type=radio]")[H].checked;
+                        if (dotChecked == true && document.getElementsByClassName("modal")[0].style.display == "none") {
+                            if (document.getElementById("ccMain_pnlstock").style.display == "block") {
+                                clearInterval(distDotIntId);
+                                if (autoFill_address == 1) {
+                                    setTimeout(autoFillDeliAddress, 10000);
+                                }
+                                if (autoCap_Refresh == 1) {
+                                    setTimeout(autoCapRefresh, 5000);
+                                }
+                                if (autoPage_scrollDown == 1) {
+                                    setTimeout(autoPageScrollDown, 5000);
+                                }
+                            } else {
+                                $("input[type=radio]")[H].click();
+                            }
+                        }
+                    }
+                } else if (document.getElementsByClassName("modal")[0].style.display == "none") {
+                    PopulateGrid(0);
+                }
+            }
+        }, 300);
+    }
+
+    window.old_alert = window.alert;
+    window.alert = function (message) {
+        let validOTP = "Please enter valid OTP";
+        let problemOTP = "Problem while sending OTP, Please Try Again";
+        let stockyard = "Stockyard is not Active  (or) Quantity is less  (or) Other Orders in Queue, Please try after some time ";
+        if (message.toString() == validOTP.toString()) {
+            if (document.getElementById("myModal").style.display == "block") {
+                let inputIds = ["ccMain_txtCOTP1", "ccMain_txtCOTP2", "ccMain_txtCOTP3"];
+                for (let inputId of inputIds) {
+                    let inputElement = document.getElementById(inputId);
+                    if (inputElement.value != "") {
+                        document.getElementById("ccMain_txtCOTP").value = inputElement.value;
+                        inputElement.value = "";
+                        CallRegister();
+                        return true;
+                    }
+                }
+            }
+        } else if (message.toString() == stockyard.toString() && uuA === 1) {
+            return true;
+        } else if (message.toString() == problemOTP.toString()) {
+            CallSMSFunc();
+        } else {
+            old_alert(message);
+        }
+    };
+    let intId = setInterval(function () {
+        if (document.getElementById("ccMain_txtCOTP").value != "" && document.getElementById("lbltimeVH").innerHTML == "Timer : 0" && register_submit == 1 && localStorage.getItem("Stop Submit") == 0 && document.getElementById("myModal").style.display == "block") {
+            if (document.getElementById("ccMain_txtCOTP").value.length == 6) {
+                clearInterval(intId);
+                setTimeout(function () {
+                    CallRegister();
+                    if (registerMulti_submit == 1) {
+                        let checkInterval = setInterval(function () {
+                            if (document.getElementById("myModal").style.display == "block" && document.getElementsByClassName("modal")[0].style.display == "none" && localStorage.getItem("Stop Submit") == 0 && document.getElementById("ccMain_txtCOTP").value != "") {
+                                if (document.readyState == "complete") {
+                                    if (registerMulti_submitNo == 0) {
+                                        clearInterval(checkInterval);
+                                    } else {
+                                        CallRegister();
+                                        registerMulti_submitNo--;
+                                    }
+                                }
+                            }
+                        }, 1400);
+                    };
+                }, register_submit_delay);
+            }
+        }
+    }, 30);
+    setTimeout(fillAutoOTP, 30000);
+}
+let cRId = setInterval(function () {
+    if (window.location.href.toLowerCase().indexOf("masters") !== -1 && $("#btnCOTPSubmit").is(":visible") && $("#btnCOTPResend").is(":hidden")) {
+        clearInterval(cRId);
+        localStorage.setItem("Stop Submit", 1);
+        isResendOTPSent = 1;
+        fillResendOTP();
+    } else if (window.location.href.toLowerCase().indexOf("order") !== -1 && $("#btnCOTPSubmit").is(":visible") && $("#btnCOTPResend").is(":hidden")) {
+        clearInterval(cRId);
+        localStorage.setItem("Stop Submit", 1);
+        isResendOTPSent = 1;
+        fillResendOTP();
+    }
+}, 400);
